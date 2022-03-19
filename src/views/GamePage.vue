@@ -29,8 +29,56 @@ export default {
             cols: 4,
             spaceBetween: 20,
             cellHeight: null,
-            cellWidth: null
-        }
+            cellWidth: null,
+            textSize: 35
+        },
+        colors: {
+            2: {
+                text: '#776E65',
+                bg: '#EEE4DA',
+            },
+            4: {
+                text: '#776E65',
+                bg: '#F9EED0',
+            },
+            8: {
+                text: '#FFFFFF',
+                bg: '#FCB67A',
+            },
+            16: {
+                text: '#FFFFFF',
+                bg: '#F59563',
+            },
+            32: {
+                text: '#FFFFFF',
+                bg: '#FD6E5E',
+            },
+            64: {
+                text: '#FFFFFF',
+                bg: '#F74931',
+            },
+            128: {
+                text: '#FFFFFF',
+                bg: '#FADD73',
+            },
+            256: {
+                text: '#FFFFFF',
+                bg: '#FFD94F',
+            },
+            512: {
+                text: '#FFFFFF',
+                bg: '#FFD332',
+            },
+            1024: {
+                text: '#FFFFFF',
+                bg: '#FFCC10',
+            },
+            2048: {
+                text: '#FFFFFF',
+                bg: '#EDC301',
+            },
+        },
+        cellData: {},
     }),
     computed: {
         bestScore() {
@@ -65,22 +113,57 @@ export default {
 
             console.log(this.params);
 
-            for (let i = 0; i <= this.params.rows; i++) {
-                for (let j = 0; j <= this.params.cols; j++) {
+            for (let i = 0; i < this.params.rows; i++) {
+                for (let j = 0; j < this.params.cols; j++) {
                     this.ctx.fillStyle = '#CDC1B4';
-                    this.roundRect(
-                        this.ctx,
-                        this.params.spaceBetween + (j * this.params.cellWidth) + (this.params.spaceBetween * j),
-                        this.params.spaceBetween + (i * this.params.cellHeight) + (this.params.spaceBetween * i), 
-                        this.params.cellWidth, 
-                        this.params.cellHeight, 
-                        10,
-                        '#CDC1B4'
-                    );
+                    this.roundRect({
+                        x: this.params.spaceBetween + (j * this.params.cellWidth) + (this.params.spaceBetween * j),
+                        y: this.params.spaceBetween + (i * this.params.cellHeight) + (this.params.spaceBetween * i), 
+                        width: this.params.cellWidth, 
+                        height: this.params.cellHeight, 
+                        radius: 10,
+                        fill: '#CDC1B4'
+                    });
+
+                    this.cellData[(i * this.params.cols) + j] = {
+                        x: this.params.spaceBetween + (j * this.params.cellWidth) + (this.params.spaceBetween * j), 
+                        y: this.params.spaceBetween + (i * this.params.cellHeight) + (this.params.spaceBetween * i),
+                        spawned: false,
+                        value: null
+                    }
                 }
             }
+
+    console.log(this.cellData);
+            this.generateCell();
+            this.generateCell();
         },
-        roundRect(ctx, x, y, width, height, radius, fill) {
+        generateCell() {
+            const cellNum = Math.floor(Math.random() * (15 - 0));
+            const cellVal = Math.floor(Math.random() * (3 - 1) + 1);
+
+            if (this.cellData[cellNum].spawned) {
+                this.generateCell();
+            } else {
+                this.cellData[cellNum].spawned = true;
+                this.cellData[cellNum].value = cellVal * 2;
+
+                this.roundRect({
+                    x: this.cellData[cellNum].x,
+                    y: this.cellData[cellNum].y, 
+                    width: this.params.cellWidth, 
+                    height: this.params.cellHeight, 
+                    radius: 10,
+                    fill: this.colors[this.cellData[cellNum].value].bg,
+                    text: {
+                        color: this.colors[this.cellData[cellNum].value].text,
+                        value: this.cellData[cellNum].value
+                    },
+                })
+            }
+            console.log(cellNum, this.cellData[cellNum].value);
+        },
+        roundRect({x, y, width, height, radius, fill, text = null}) {
             if (typeof radius === 'undefined') {
                 radius = 10;
             }
@@ -92,21 +175,29 @@ export default {
                     radius[side] = radius[side] || defaultRadius[side];
                 }
             }
-            ctx.beginPath();
-            ctx.moveTo(x + radius.tl, y);
-            ctx.lineTo(x + width - radius.tr, y);
-            ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
-            ctx.lineTo(x + width, y + height - radius.br);
-            ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
-            ctx.lineTo(x + radius.bl, y + height);
-            ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
-            ctx.lineTo(x, y + radius.tl);
-            ctx.quadraticCurveTo(x, y, x + radius.tl, y);
-            ctx.closePath();
-            if (fill) {
-                ctx.strokeStyle = fill;
-                ctx.fillStyle = fill;
-                ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + radius.tl, y);
+            this.ctx.lineTo(x + width - radius.tr, y);
+            this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+            this.ctx.lineTo(x + width, y + height - radius.br);
+            this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+            this.ctx.lineTo(x + radius.bl, y + height);
+            this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+            this.ctx.lineTo(x, y + radius.tl);
+            this.ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+            this.ctx.closePath();
+
+            this.ctx.strokeStyle = fill;
+            this.ctx.fillStyle = fill;
+            this.ctx.fill();
+
+            if (text) {
+                this.ctx.font = `${this.params.textSize}px sans-serif`;
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = text.color;
+                const textWidth = this.ctx.measureText(text.value).width;
+                this.ctx.fillText(text.value, x + (width / 2), y + (height / 2) + 15);
+                console.log(textWidth, 'text width');
             }
         },
     }
